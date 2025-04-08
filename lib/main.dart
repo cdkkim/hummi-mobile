@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'pages/record_page.dart';
+import 'pages/recordings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,8 +13,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Hummi',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Hummi'),
     );
   }
 }
@@ -27,11 +32,20 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  int _selectedIndex = 0;
+  final GlobalKey<RecordPageState> _recordKey = GlobalKey<RecordPageState>();
+  late final RecordPage _recordPage;
+  final RecordingsPage _recordingsPage = const RecordingsPage();
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    _recordPage = RecordPage(key: _recordKey);
+  }
+
+  void _onItemTapped(int index) {
     setState(() {
-      _counter++;
+      _selectedIndex = index;
     });
   }
 
@@ -40,22 +54,48 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(_selectedIndex == 0 ? 'Record' : 'Recordings'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text('$_counter', style: Theme.of(context).textTheme.headlineMedium),
-          ],
-        ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [_recordPage, _recordingsPage],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      bottomNavigationBar: NavigationBar(
+        onDestinationSelected: _onItemTapped,
+        selectedIndex: _selectedIndex,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.mic), label: 'Record'),
+          NavigationDestination(icon: Icon(Icons.list), label: 'Recordings'),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton:
+          _selectedIndex == 0
+              ? Container(
+                height: 80,
+                width: 80,
+                margin: const EdgeInsets.only(bottom: 16),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    final recordState = _recordKey.currentState;
+                    if (recordState != null) {
+                      recordState.toggleRecording();
+                    }
+                  },
+                  backgroundColor:
+                      _recordKey.currentState?.isRecording == true
+                          ? Colors.red
+                          : Theme.of(context).colorScheme.primaryContainer,
+                  elevation: 4,
+                  child: Icon(
+                    _recordKey.currentState?.isRecording == true
+                        ? Icons.stop
+                        : Icons.mic,
+                    size: 32,
+                  ),
+                ),
+              )
+              : null,
     );
   }
 }
